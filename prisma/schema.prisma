@@ -1,0 +1,142 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client-js {
+  provider = "prisma-client-js"
+  output   = "../apps/client/src/lib/generated/prisma"
+}
+
+generator client-py {
+  provider = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userName  String   @unique
+  email     String   @unique
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chats     Chat[]
+  
+}
+
+model Chat {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  Message[]
+  userId    String
+  user      Profile  @relation(fields: [userId], references: [id])
+  
+  // Short-term memory stored as JSON for each chat session
+  shortTermMemory Json? @default("[]")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      Role
+  documents Document[]
+  queryEvaluation QueryEvaluation?
+
+  retrievedChunks Json?
+  groundingScore  Float?
+  ragMetadata     Json? // Store additional RAG metadata like fallback_used, chunk_count, etc.
+  responseTime    Float? // Track response time for performance monitoring
+  
+  @@index([chatId])
+  @@index([role])
+  @@index([createdAt])
+}
+
+model File {
+  id        String     @id @default(cuid())
+  url       String     // Supabase Storage public URL
+  type      FileType
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  fileName  String
+  fileSize  Int?
+  documentId String   @unique
+  document  Document  @relation(fields: [documentId], references: [id])
+  documentChunks DocumentChunk[]
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  language    Language
+  metadata    Json?
+  wordCount   Int? 
+  pageCount   Int? 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  messageId   String?
+  message     Message?  @relation(fields: [messageId], references: [id])
+  file        File?
+  chunks      DocumentChunk[]
+
+  @@index([language])  // Index for language-based queries
+  @@index([messageId]) // Index for message-based queries
+}
+
+model DocumentChunk {
+  id          String   @id @default(cuid())
+  content     String
+  metadata    Json?
+  embedding   Unsupported("vector(384)")
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id])
+  fileId      String?
+  file        File?    @relation(fields: [fileId], references: [id])
+  chunkIndex  Int 
+  tokenCount  Int?
+  createdAt   DateTime @default(now())
+
+  @@index([documentId])
+  @@index([fileId])
+}
+
+model QueryEvaluation {
+  id            String   @id @default(cuid())
+  messageId     String   @unique
+  message       Message  @relation(fields: [messageId], references: [id])
+  groundedness  Float?   // 0-1 score
+  relevance     Float?   // 0-1 score
+  userFeedback  String?  // 'helpful', 'not_helpful', 'partial'
+  createdAt     DateTime @default(now())
+}
+
+enum FileType {
+  pdf
+  image
+  text
+}
+
+enum Role {
+  user
+  ai
+}
+
+enum Language {
+  en
+  bn
+  mixed
+}

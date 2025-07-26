@@ -1,0 +1,16 @@
+{
+  "name": "root",
+  "private": true,
+  "workspaces": [
+    "prisma",
+    "apps/*"
+  ],
+  "scripts": {
+    "db:push": "prisma db push",
+    "gen": "prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "5.17.0",
+    "prisma": "5.17.0"
+  }
+}

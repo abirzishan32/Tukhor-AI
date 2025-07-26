@@ -1,0 +1,26 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+pydantic-settings
+python-dotenv
+slowapi
+supabase
+prisma
+
+# RAG Dependencies
+langchain
+langchain-community
+langchain-google-genai
+google-generativeai
+pgvector
+psycopg2-binary
+pymupdf
+pdfplumber
+sentence-transformers
+numpy
+scikit-learn
+nltk
+python-magic
+aiofiles
+nltk
